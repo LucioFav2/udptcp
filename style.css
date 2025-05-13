@@ -1,0 +1,104 @@
+/* style.css */
+
+/* Sfondo nero con griglia bianca e gradient blu in alto a destra */
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background-color: #000000;
+    background-image:
+      linear-gradient(to top right, rgba(0, 123, 255, 0.2), transparent),
+      linear-gradient(0deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: cover, 30px 30px, 30px 30px;
+    background-position: top right, top left, top left;
+    color: white;
+    cursor: none;
+  }
+  
+  /* Cursore personalizzato */
+  .custom-cursor {
+    position: fixed;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #00c3ff, #005fa3);
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+  }
+  
+  /* Menu laterale */
+  aside {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 220px;
+    background: #0a0a0a;
+    padding-top: 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+    overflow-y: auto; /* Questa linea abilita la scrollbar verticale */
+  }
+  
+  aside a {
+    display: block;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 8px;
+    margin: 0 10px;
+    transition: background 0.3s, color 0.3s, transform 0.2s;
+  }
+  
+  aside a:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  aside a.active {
+    background: rgba(0, 123, 255, 0.15);
+    border: 2px solid #007cf0;
+    color: #00d2ff;
+    font-weight: bold;
+    transform: translateX(4px);
+  }
+  
+  /* Area principale */
+  main {
+    margin-left: 240px;
+    padding: 2rem;
+  }
+  
+  section {
+    margin-bottom: 4rem;
+  }
+  
+  h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 0.5rem;
+  }
+  
+  ul, ol {
+    margin-left: 1.5rem;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  
+  table th,
+  table td {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 8px 12px;
+    text-align: left;
+  }
+  
+  table thead {
+    background-color: rgba(255, 255, 255, 0.1);
+  }

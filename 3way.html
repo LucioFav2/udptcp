@@ -1,0 +1,471 @@
+
+<html lang="it"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCP 3-Way Handshake</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f9ff;
+        }
+
+        .timeline {
+            position: relative;
+            height: 400px;
+            width: 2px;
+            background-color: #64748b;
+        }
+
+        .entity {
+            width: 120px;
+            height: 60px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .arrow {
+            position: absolute;
+            height: 2px;
+            background-color: #3b82f6;
+            transform-origin: left;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: transform 1s ease, opacity 0.5s ease;
+        }
+
+        .arrow::after {
+            content: '';
+            position: absolute;
+            right: -1px;
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 10px solid #3b82f6;
+        }
+
+        .arrow-label {
+            position: absolute;
+            background-color: #dbeafe;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            white-space: nowrap;
+            transform: translateY(-24px);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .arrow-reverse {
+            transform-origin: right;
+        }
+
+        .arrow-reverse::after {
+            left: -1px;
+            right: auto;
+            border-left: none;
+            border-right: 10px solid #3b82f6;
+        }
+
+        .step-indicator {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #3b82f6;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .btn {
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 640px) {
+            .timeline {
+                height: 300px;
+            }
+            
+            .entity {
+                width: 100px;
+                height: 50px;
+                font-size: 0.875rem;
+            }
+            
+            .arrow-label {
+                font-size: 0.75rem;
+                transform: translateY(-20px);
+            }
+            
+            .explanation-box {
+                padding: 1rem !important;
+            }
+        }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.16 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.container{width:100%}@media (min-width: 640px){.container{max-width:640px}}@media (min-width: 768px){.container{max-width:768px}}@media (min-width: 1024px){.container{max-width:1024px}}@media (min-width: 1280px){.container{max-width:1280px}}@media (min-width: 1536px){.container{max-width:1536px}}.relative{position:relative}.mx-auto{margin-left:auto;margin-right:auto}.mb-2{margin-bottom:0.5rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mr-2{margin-right:0.5rem}.flex{display:flex}.h-5{height:1.25rem}.w-5{width:1.25rem}.max-w-5xl{max-width:64rem}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.justify-center{justify-content:center}.gap-4{gap:1rem}.space-x-4 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(1rem * var(--tw-space-x-reverse));margin-left:calc(1rem * calc(1 - var(--tw-space-x-reverse)))}.rounded-lg{border-radius:0.5rem}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-blue-200{--tw-border-opacity:1;border-color:rgb(191 219 254 / var(--tw-border-opacity, 1))}.border-gray-200{--tw-border-opacity:1;border-color:rgb(229 231 235 / var(--tw-border-opacity, 1))}.border-green-200{--tw-border-opacity:1;border-color:rgb(187 247 208 / var(--tw-border-opacity, 1))}.bg-blue-100{--tw-bg-opacity:1;background-color:rgb(219 234 254 / var(--tw-bg-opacity, 1))}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.bg-gray-50{--tw-bg-opacity:1;background-color:rgb(249 250 251 / var(--tw-bg-opacity, 1))}.bg-gray-600{--tw-bg-opacity:1;background-color:rgb(75 85 99 / var(--tw-bg-opacity, 1))}.bg-green-100{--tw-bg-opacity:1;background-color:rgb(220 252 231 / var(--tw-bg-opacity, 1))}.bg-green-600{--tw-bg-opacity:1;background-color:rgb(22 163 74 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.p-4{padding:1rem}.p-6{padding:1.5rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-8{padding-top:2rem;padding-bottom:2rem}.text-center{text-align:center}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.font-semibold{font-weight:600}.text-blue-800{--tw-text-opacity:1;color:rgb(30 64 175 / var(--tw-text-opacity, 1))}.text-gray-600{--tw-text-opacity:1;color:rgb(75 85 99 / var(--tw-text-opacity, 1))}.text-gray-700{--tw-text-opacity:1;color:rgb(55 65 81 / var(--tw-text-opacity, 1))}.text-gray-800{--tw-text-opacity:1;color:rgb(31 41 55 / var(--tw-text-opacity, 1))}.text-green-800{--tw-text-opacity:1;color:rgb(22 101 52 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.hover\:bg-blue-700:hover{--tw-bg-opacity:1;background-color:rgb(29 78 216 / var(--tw-bg-opacity, 1))}.hover\:bg-gray-700:hover{--tw-bg-opacity:1;background-color:rgb(55 65 81 / var(--tw-bg-opacity, 1))}.hover\:bg-green-700:hover{--tw-bg-opacity:1;background-color:rgb(21 128 61 / var(--tw-bg-opacity, 1))}@media (min-width: 768px){.md\:space-x-16 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(4rem * var(--tw-space-x-reverse));margin-left:calc(4rem * calc(1 - var(--tw-space-x-reverse)))}}@media (min-width: 1024px){.lg\:space-x-32 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(8rem * var(--tw-space-x-reverse));margin-left:calc(8rem * calc(1 - var(--tw-space-x-reverse)))}}</style></head>
+<body>
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">TCP 3-Way Handshake</h1>
+        <p class="text-center text-gray-600 mb-8">Animazione interattiva della sequenza di connessione TCP</p>
+        
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex justify-center mb-6">
+                <div id="animation-container" class="flex space-x-4 md:space-x-16 lg:space-x-32 relative">
+                    <!-- Client -->
+                    <div class="flex flex-col items-center">
+                        <div class="entity bg-blue-100 text-blue-800 border border-blue-200 mb-4">
+                            Client
+                        </div>
+                        <div class="timeline"></div>
+                    </div>
+                    
+                    <!-- Server -->
+                    <div class="flex flex-col items-center">
+                        <div class="entity bg-green-100 text-green-800 border border-green-200 mb-4">
+                            Server
+                        </div>
+                        <div class="timeline"></div>
+                    </div>
+                <div class="arrow" style="top: 100px; left: 60px; width: 184px; opacity: 1;"><span class="arrow-label">SYN (seq=m)</span></div><div class="arrow arrow-reverse" style="top: 200px; right: 60px; width: 184px; opacity: 1;"><span class="arrow-label">SYN (seq=n), ACK (ack=m+1)</span></div><div class="arrow" style="top: 300px; left: 60px; width: 184px; opacity: 1;"><span class="arrow-label">ACK (ack=n+1)</span></div><div class="step-indicator" style="top: 100px; left: 60px; opacity: 1;">1</div><div class="step-indicator" style="top: 200px; right: 60px; left: auto; opacity: 1;">2</div><div class="step-indicator" style="top: 300px; left: 60px; opacity: 1;">3</div><div class="step-indicator" style="top: 350px; left: 50%; opacity: 1;">4</div></div>
+            </div>
+            
+            <div id="explanation" class="explanation-box bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                <h3 class="font-semibold text-lg text-gray-800 mb-2">Connessione stabilita!</h3>
+                <p class="text-gray-700">Il 3-Way Handshake è completato e la connessione TCP è ora stabilita. Entrambe le parti possono iniziare a scambiarsi dati in modo affidabile. I numeri di sequenza verranno utilizzati per garantire l'ordine corretto dei pacchetti e rilevare eventuali perdite.</p>
+            </div>
+            
+            <div class="flex flex-wrap justify-center gap-4">
+                <button id="nextBtn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg shadow-md flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                    Avanti
+                </button>
+                <button id="resetBtn" class="btn bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg shadow-md flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+                    </svg>
+                    Ripeti animazione
+                </button>
+                <button id="autoBtn" class="btn bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg shadow-md flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
+                    </svg>
+                    Avvia
+                </button>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Cos'è il 3-Way Handshake?</h2>
+            <p class="text-gray-700 mb-4">Il <strong>3-Way Handshake</strong> è il processo utilizzato dal protocollo TCP per stabilire una connessione affidabile tra due dispositivi. Questo meccanismo garantisce che entrambe le parti siano pronte a comunicare e concordino sui parametri iniziali della connessione.</p>
+            <p class="text-gray-700">I <strong>numeri di sequenza</strong> (seq) sono utilizzati per tenere traccia dei byte inviati, mentre i <strong>numeri di acknowledgment</strong> (ack) confermano la ricezione dei dati. Questo sistema permette di rilevare pacchetti persi o duplicati, garantendo l'affidabilità della comunicazione TCP.</p>
+        </div>
+    </div>
+
+    <script>
+        const nextBtn = document.getElementById('nextBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const autoBtn = document.getElementById('autoBtn');
+        const explanation = document.getElementById('explanation');
+        const container = document.getElementById('animation-container');
+        
+        let currentStep = 0;
+        let autoMode = false;
+        let autoModeTimer = null;
+        let arrows = [];
+        let stepIndicators = [];
+        
+        // Create arrows and step indicators dynamically
+        function setupAnimation() {
+            // Clear any existing elements
+            arrows = [];
+            stepIndicators = [];
+            
+            // Remove existing arrows and indicators
+            const existingArrows = container.querySelectorAll('.arrow');
+            const existingIndicators = container.querySelectorAll('.step-indicator');
+            existingArrows.forEach(arrow => arrow.remove());
+            existingIndicators.forEach(indicator => indicator.remove());
+            
+            // Create arrows
+            const arrow1 = document.createElement('div');
+            arrow1.className = 'arrow';
+            arrow1.style.top = '100px';
+            arrow1.style.left = '60px';
+            arrow1.style.width = '0px';
+            
+            const arrow1Label = document.createElement('span');
+            arrow1Label.className = 'arrow-label';
+            arrow1Label.textContent = 'SYN (seq=m)';
+            arrow1.appendChild(arrow1Label);
+            
+            const arrow2 = document.createElement('div');
+            arrow2.className = 'arrow arrow-reverse';
+            arrow2.style.top = '200px';
+            arrow2.style.right = '60px';
+            arrow2.style.width = '0px';
+            
+            const arrow2Label = document.createElement('span');
+            arrow2Label.className = 'arrow-label';
+            arrow2Label.textContent = 'SYN (seq=n), ACK (ack=m+1)';
+            arrow2.appendChild(arrow2Label);
+            
+            const arrow3 = document.createElement('div');
+            arrow3.className = 'arrow';
+            arrow3.style.top = '300px';
+            arrow3.style.left = '60px';
+            arrow3.style.width = '0px';
+            
+            const arrow3Label = document.createElement('span');
+            arrow3Label.className = 'arrow-label';
+            arrow3Label.textContent = 'ACK (ack=n+1)';
+            arrow3.appendChild(arrow3Label);
+            
+            // Add arrows to container
+            container.appendChild(arrow1);
+            container.appendChild(arrow2);
+            container.appendChild(arrow3);
+            
+            arrows = [arrow1, arrow2, arrow3];
+            
+            // Create step indicators
+            const step1 = document.createElement('div');
+            step1.className = 'step-indicator';
+            step1.style.top = '100px';
+            step1.style.left = '60px';
+            step1.textContent = '1';
+            
+            const step2 = document.createElement('div');
+            step2.className = 'step-indicator';
+            step2.style.top = '200px';
+            step2.style.right = '60px';
+            step2.style.left = 'auto';
+            step2.textContent = '2';
+            
+            const step3 = document.createElement('div');
+            step3.className = 'step-indicator';
+            step3.style.top = '300px';
+            step3.style.left = '60px';
+            step3.textContent = '3';
+            
+            const step4 = document.createElement('div');
+            step4.className = 'step-indicator';
+            step4.style.top = '350px';
+            step4.style.left = '50%';
+            step4.textContent = '4';
+            
+            // Add step indicators to container
+            container.appendChild(step1);
+            container.appendChild(step2);
+            container.appendChild(step3);
+            container.appendChild(step4);
+            
+            stepIndicators = [step1, step2, step3, step4];
+        }
+        
+        // Calculate arrow width based on container
+        function calculateArrowWidth() {
+            return container.offsetWidth - 120;
+        }
+        
+        // Update arrow width on window resize
+        window.addEventListener('resize', () => {
+            const width = calculateArrowWidth();
+            if (currentStep >= 1) arrows[0].style.width = `${width}px`;
+            if (currentStep >= 2) arrows[1].style.width = `${width}px`;
+            if (currentStep >= 3) arrows[2].style.width = `${width}px`;
+        });
+        
+        // Steps content
+        const steps = [
+            {
+                title: "Inizia l'animazione",
+                content: "Clicca sul pulsante \"Avanti\" per procedere passo dopo passo attraverso la sequenza del 3-Way Handshake."
+            },
+            {
+                title: "Passo 1: SYN",
+                content: "Il Client invia un pacchetto SYN (Synchronize) al Server con un numero di sequenza iniziale 'm'. Questo pacchetto indica che il Client vuole stabilire una connessione e comunica il suo numero di sequenza iniziale."
+            },
+            {
+                title: "Passo 2: SYN-ACK",
+                content: "Il Server riceve il pacchetto SYN e risponde con un pacchetto SYN-ACK. Questo contiene il proprio numero di sequenza 'n' e un ACK (Acknowledgment) con valore 'm+1', confermando la ricezione del SYN del Client e indicando che è pronto a ricevere il primo byte di dati."
+            },
+            {
+                title: "Passo 3: ACK",
+                content: "Il Client riceve il SYN-ACK e invia un pacchetto ACK con valore 'n+1', confermando la ricezione del SYN del Server. Questo completa il processo di handshake."
+            },
+            {
+                title: "Connessione stabilita!",
+                content: "Il 3-Way Handshake è completato e la connessione TCP è ora stabilita. Entrambe le parti possono iniziare a scambiarsi dati in modo affidabile. I numeri di sequenza verranno utilizzati per garantire l'ordine corretto dei pacchetti e rilevare eventuali perdite."
+            }
+        ];
+        
+        // Update explanation
+        function updateExplanation(step) {
+            explanation.innerHTML = `
+                <h3 class="font-semibold text-lg text-gray-800 mb-2">${steps[step].title}</h3>
+                <p class="text-gray-700">${steps[step].content}</p>
+            `;
+        }
+        
+        // Next step function
+        function nextStep() {
+            if (currentStep < 4) {
+                currentStep++;
+                
+                const width = calculateArrowWidth();
+                
+                switch(currentStep) {
+                    case 1:
+                        // Show first arrow (SYN)
+                        stepIndicators[0].style.opacity = '1';
+                        arrows[0].style.opacity = '1';
+                        arrows[0].style.width = `${width}px`;
+                        break;
+                    case 2:
+                        // Show second arrow (SYN-ACK)
+                        stepIndicators[1].style.opacity = '1';
+                        arrows[1].style.opacity = '1';
+                        arrows[1].style.width = `${width}px`;
+                        break;
+                    case 3:
+                        // Show third arrow (ACK)
+                        stepIndicators[2].style.opacity = '1';
+                        arrows[2].style.opacity = '1';
+                        arrows[2].style.width = `${width}px`;
+                        break;
+                    case 4:
+                        // Connection established
+                        stepIndicators[3].style.opacity = '1';
+                        break;
+                }
+                
+                updateExplanation(currentStep);
+            }
+            
+            if (currentStep === 4 && autoMode) {
+                clearTimeout(autoModeTimer);
+                autoMode = false;
+                autoBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                    Avvia
+                `;
+            }
+        }
+        
+        // Reset animation
+        function resetAnimation() {
+            currentStep = 0;
+            
+            // Reset arrows
+            arrows.forEach(arrow => {
+                arrow.style.opacity = '0';
+                arrow.style.width = '0px';
+            });
+            
+            // Reset step indicators
+            stepIndicators.forEach(indicator => {
+                indicator.style.opacity = '0';
+            });
+            
+            // Reset explanation
+            updateExplanation(0);
+            
+            // Stop auto mode if running
+            if (autoMode) {
+                clearTimeout(autoModeTimer);
+                autoMode = false;
+                autoBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                    Avvia
+                `;
+            }
+        }
+        
+        // Auto mode function
+        function toggleAutoMode() {
+            if (autoMode) {
+                // Stop auto mode
+                clearTimeout(autoModeTimer);
+                autoMode = false;
+                autoBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                    Avvia
+                `;
+            } else {
+                // Start auto mode
+                resetAnimation();
+                autoMode = true;
+                autoBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    Ferma
+                `;
+                
+                function runAutoStep() {
+                    if (currentStep < 4) {
+                        nextStep();
+                        autoModeTimer = setTimeout(runAutoStep, 2000);
+                    } else {
+                        autoMode = false;
+                        autoBtn.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                            </svg>
+                            Avvia
+                        `;
+                    }
+                }
+                
+                autoModeTimer = setTimeout(runAutoStep, 500);
+            }
+        }
+        
+        // Initialize animation
+        setupAnimation();
+        
+        // Event listeners
+        nextBtn.addEventListener('click', nextStep);
+        resetBtn.addEventListener('click', resetAnimation);
+        autoBtn.addEventListener('click', toggleAutoMode);
+        
+        // Initial setup
+        window.addEventListener('load', () => {
+            setupAnimation();
+            updateExplanation(0);
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93eed567361fedce',t:'MTc0NzEwNDQ3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><iframe height="1" width="1" style="position: absolute; top: 0px; left: 0px; border: none; visibility: hidden;"></iframe>
+</body></html>

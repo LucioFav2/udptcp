@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strato di Trasporto – Guida Completa Estesa</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      aside {
+        font-family: 'Inter', sans-serif;
+      } 
+    </style>
+</head>
+<body>
+    <div class="custom-cursor" id="cursor"></div>
+    <aside>
+        <a href="#1-posizione" class="active">1. Posizione nello Stack</a>
+        <a href="#sap-tpdu">2. SAP, TPDU e Segmentazione</a>
+        <a href="#primitive">3. Primitive e Servizi</a>
+        <a href="#servizio-protocollo">4. Servizio vs Protocollo</a>
+        <a href="#udp">5. UDP</a>
+        <a href="#pseudo-header">6. Pseudo-header</a>
+        <a href="#tcp">7. TCP</a>
+        <a href="#socket-indirizzamento">8. Socket e Indirizzamento</a>
+        <a href="#connessione-attiva-passiva">9. Connessione attiva/passiva</a>
+        <a href="#header">10. Header TCP/UDP</a>
+        <a href="#header-visuale">11. Struttura Visuale Header TCP</a>
+        <a href="#rtt-rto">12. Calcolo RTT/RTO</a>
+        <a href="#timers">13. Timer TCP</a>
+        <a href="#mtu-mss">14. MTU e MSS</a>
+        <a href="#nack">15. NACK implicito</a>
+        <a href="#chiusura">16. Chiusura TCP</a>
+        <a href="#inetd">17. inetd</a>
+        <a href="#multiplexing-socket">18. Multiplexing e Socket</a>
+        <a href="#qos">19. Qualità del Servizio</a>
+        <a href="#errori">20. Malfunzionamenti ed Esempi</a>
+        <a href="#confronto">21. TCP vs UDP</a>
+        <a href="#ports">22. Well-Known Ports</a>
+    </aside>
+    <main>
+        <section id="1-posizione">
+            <h2>1. Posizione nello Stack</h2>
+            <p>
+                Il livello 4 del modello ISO/OSI, noto come livello di trasporto, si trova tra il livello di rete (livello 3) e il livello di applicazione (livello 5).
+                Offre un collegamento logico tra processi applicativi in esecuzione su host diversi.
+                <br><br>
+                <strong>Funzioni principali:</strong>
+            </p>
+            <ul style="list-style-type: disc;">
+                <li>Segmentazione e riassemblaggio dei dati</li>
+                <li>Trasferimento dati affidabile</li>
+                <li>Controllo del flusso</li>
+                <li>Controllo della congestione</li>
+                <li>Multiplexing e demultiplexing</li>
+                <li>Gestione della connessione</li>
+            </ul>
+            <p>
+                Il livello di trasporto maschera l'inaffidabilità del livello sottostante (livello di rete), fornendo un trasferimento dati affidabile e orientato alla connessione (TCP)
+                o un trasferimento dati non orientato alla connessione e veloce (UDP) alle applicazioni.
+            </p>
+                  <a href="isoosi.html" target="_blank">
+                    <iframe src="isoosi.html" width="1000" height="400" pointer-events: none;"></iframe>
+                  </a>
+                  
+                  
+            <p style="text-align: center; font-size: 0.9em; color: #aaa;"><em>Posizione del Livello di Trasporto nel Modello OSI</em></p>
+        </section>
+
+        <section id="sap-tpdu">
+            <h2>2. SAP, TPDU e Segmentazione</h2>
+            <p>
+                <strong>SAP (Service Access Point):</strong> Un identificatore univoco che specifica un'applicazione specifica in esecuzione su un host.
+                In termini semplici, è come un "indirizzo" all'interno dell'host che consente al livello di trasporto di consegnare i dati all'applicazione corretta.
+                <br><br>
+                <strong>TPDU (Transport Protocol Data Unit):</strong> L'unità di dati scambiata tra entità del livello di trasporto.
+                Contiene l'intestazione del protocollo di trasporto (TCP o UDP) e i dati dell'applicazione.
+                <br><br>
+                <strong>Segmentazione:</strong> Il processo di divisione dei dati dell'applicazione (APDU - Application Protocol Data Unit) in blocchi più piccoli,
+                chiamati TPDU, per adattarli alla dimensione massima del pacchetto di rete (MTU). Il riassemblaggio avviene all'estremità ricevente.
+            </p>
+            <p><strong>Schema:</strong></p>
+            <table>
+                <thead><tr><th>Livello</th><th>Unità Dati</th></tr></thead>
+                <tbody>
+                <tr><td>Applicazione</td><td>APDU (Application Protocol Data Unit)</td></tr>
+                <tr><td>Trasporto</td><td>TPDU (Transport Protocol Data Unit)</td></tr>
+                <tr><td>Rete</td><td>Pacchetto / IP</td></tr>
+                </tbody>
+            </table>
+            <p>
+                <strong>Esempio di Segmentazione:</strong>
+            </p>
+            <ul style="list-style-type: disc;">
+                <li>Supponiamo che un'applicazione voglia inviare un file di 10000 byte.</li>
+                <li>Il livello di trasporto (TCP) divide il file in segmenti più piccoli, ad esempio, di 1460 byte ciascuno (se la MTU è 1500 byte).</li>
+                <li>Ogni segmento avrà un'intestazione TCP che contiene informazioni come il numero di sequenza per il riassemblaggio.</li>
+                <li>All'estremità ricevente, il livello di trasporto riassembla i segmenti nell'ordine corretto per ricostruire il file originale di 10000 byte.
+                    <br>
+                    <a href="snap2.html" target="_blank">
+                        <iframe src="snap2.html" width="1000" height="400" pointer-events: none;"></iframe>
+                      </a>
+                </li>
+            </ul>
+        </section>
+
+        <section id="primitive">
+            <h2>3. Primitive e Servizi</h2>
+            <p>
+                Le primitive di servizio sono comandi o operazioni che il livello di trasporto fornisce al livello di applicazione per accedere ai suoi servizi.
+                Definiscono come i livelli di applicazione e trasporto interagiscono.
+            </p>
+            <table>
+                <thead><tr><th>Tipo</th><th>Descrizione</th></tr></thead>
+                <tbody>
+                <tr><td>Request</td><td>L'applicazione richiede un servizio al livello di trasporto.</td></tr>
+                <tr><td>Indication</td><td>Il livello di trasporto notifica un evento al livello di applicazione ricevente.</td></tr>
+                <tr><td>Response</td><td>L'applicazione ricevente risponde alla indication del livello di trasporto.</td></tr>
+                <tr><td>Confirm</td><td>Il livello di trasporto conferma all'applicazione richiedente che il servizio è stato completato.</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Primitive funzionali comuni:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><code>LISTEN</code>: Prepara il livello di trasporto ad accettare una connessione in entrata.</li>
+                <li><code>CONNECT</code>: Inizia il processo di creazione di una connessione con un'altra entità del livello di trasporto.</li>
+                <li><code>SEND</code>: Invia dati al livello di trasporto per la trasmissione.</li>
+                <li><code>RECEIVE</code>: Riceve dati dal livello di trasporto.</li>
+                <li><code>DISCONNECT</code>: Termina una connessione esistente.</li>
+            </ul>
+            <p><strong>Esempio di sequenza di primitive per stabilire una connessione TCP:</strong></p>
+            <ol style="list-style-type: decimal;">
+                <li>Applicazione client: <code>T-CONNECT.request()</code></li>
+                <li>Livello di trasporto client → Livello di trasporto server: Invio di un pacchetto SYN</li>
+                <li>Livello di trasporto server: <code>T-CONNECT.indication()</code> (notifica all'applicazione server di una richiesta di connessione in entrata)</li>
+                <li>Applicazione server: <code>T-CONNECT.response()</code> (accetta la connessione)</li>
+                <li>Livello di trasporto server → Livello di trasporto client: Invio di un pacchetto SYN-ACK</li>
+                <li>Livello di trasporto client: <code>T-CONNECT.confirm()</code> (conferma all'applicazione client che la connessione è stabilita)</li>
+                <li>Livello di trasporto client → Livello di trasporto server: Invio di un pacchetto ACK</li>
+            </ol>
+        </section>
+
+        <section id="servizio-protocollo">
+            <h2>4. Servizio vs Protocollo</h2>
+            <p>
+                È fondamentale distinguere tra servizio e protocollo nel contesto del livello di trasporto:
+                <br><br>
+                <strong>Servizio:</strong>
+            </p>
+            <ul style="list-style-type: disc;">
+                <li>Rappresenta ciò che il livello di trasporto offre al livello superiore (livello di applicazione).</li>
+                <li>Definisce le funzionalità e le capacità fornite, senza specificare come vengono implementate.</li>
+                <li>Esempi: trasferimento dati affidabile, trasferimento dati non affidabile, connessione orientata, non orientata alla connessione.</li>
+                <li>Il servizio è la "promessa" che il livello di trasporto fa al livello di applicazione.</li>
+            </ul>
+            <p>
+                <strong>Protocollo:</strong>
+            </p>
+            <ul style="list-style-type: disc;">
+                <li>È l'insieme di regole e procedure che le entità del livello di trasporto (sui sistemi comunicanti) utilizzano per comunicare tra loro e implementare il servizio.</li>
+                <li>Specifica il formato dei messaggi, la sequenza degli scambi, le azioni da intraprendere in diverse situazioni (es. perdita di pacchetti, congestione).</li>
+                <li>Esempi: TCP, UDP.</li>
+                <li>Il protocollo è il "meccanismo" che realizza il servizio.</li>
+            </ul>
+            <p>
+                <strong>Analogia:</strong>
+            </p>
+            <ul style="list-style-type: disc;">
+                <li>
+                    <strong>Servizio:</strong> È come il servizio di spedizione pacchi offerto da un'azienda. L'azienda promette di consegnare il tuo pacco dalla sorgente alla destinazione.
+                </li>
+                <li>
+                    <strong>Protocollo:</strong> Sono le procedure operative che l'azienda di spedizioni segue per consegnare il pacco.
+                    Ciò include l'etichettatura del pacco, il tracciamento, la gestione del trasporto, la conferma della ricezione, ecc.
+                </li>
+            </ul>
+            <p>
+                In sintesi, il servizio è ciò che viene offerto, mentre il protocollo è come viene realizzato.
+            </p>
+        </section>
+
+        <section id="udp">
+            <h2>5. UDP – User Datagram Protocol</h2>
+            <p>
+                UDP è un protocollo di livello di trasporto semplice e non orientato alla connessione.
+                Fornisce un modo per le applicazioni di inviare datagrammi IP senza dover stabilire una connessione dedicata.
+                UDP è noto per la sua bassa latenza e l'overhead ridotto, il che lo rende adatto per applicazioni sensibili al tempo.
+            </p>
+            <p><strong>Caratteristiche principali:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Non orientato alla connessione:</strong> Non è necessario stabilire una connessione prima di inviare dati. Ogni datagramma viene inviato indipendentemente.</li>
+                <li><strong>Non affidabile:</strong> UDP non fornisce meccanismi per garantire la consegna, l'ordinamento o l'integrità dei dati. I pacchetti possono andare persi, duplicati o arrivare fuori ordine.</li>
+                <li><strong>Senza controllo di flusso:</strong> UDP non ha meccanismi per prevenire che un mittente sopraffaccia un ricevitore con troppi dati.</li>
+                <li><strong>Senza controllo di congestione:</strong> UDP non include meccanismi per ridurre la velocità di trasmissione durante la congestione della rete.</li>
+                <li><strong>Overhead basso:</strong> L'intestazione UDP è piccola (8 byte), il che riduce al minimo l'overhead del protocollo.</li>
+                <li><strong>Veloce:</strong> La mancanza di controlli di affidabilità rende UDP più veloce di TCP.</li>
+            </ul>
+            <p><strong>Formato del pacchetto UDP:</strong></p>
+            <table>
+                <thead><tr><th>Campo</th><th>Dimensione</th><th>Descrizione</th></tr></thead>
+                <tbody>
+                <tr><td>Source Port</td><td>16 bit</td><td>Numero di porta dell'applicazione mittente.</td></tr>
+                <tr><td>Destination Port</td><td>16 bit</td><td>Numero di porta dell'applicazione destinataria.</td></tr>
+                <tr><td>Length</td><td>16 bit</td><td>Lunghezza totale del datagramma UDP (intestazione + dati) in byte.</td></tr>
+                <tr><td>Checksum</td><td>16 bit</td><td>Checksum opzionale per rilevare errori nel datagramma UDP. Include anche lo pseudo-header.</td></tr>
+                <tr><td>Dati</td><td>Variabile</td><td>Il payload dei dati dell'applicazione.</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Applicazioni comuni di UDP:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Streaming multimediale:</strong> Video e audio in streaming (dove una certa perdita di pacchetti è accettabile).</li>
+                <li><strong>VoIP (Voice over IP):</strong> Trasmissione di dati vocali in tempo reale.</li>
+                <li><strong>DNS (Domain Name System):</strong> Risoluzione di nomi di dominio in indirizzi IP.</li>
+                <li><strong>DHCP (Dynamic Host Configuration Protocol):</strong> Assegnazione dinamica di indirizzi IP ai dispositivi in una rete.</li>
+                <li><strong>Giochi online:</strong> Trasmissione di aggiornamenti di gioco in tempo reale.</li>
+            </ul>
+        </section>
+
+        <section id="pseudo-header">
+            <h2>6. Pseudo-header</h2>
+            <p>
+                Lo pseudo-header è una struttura di dati che <strong>non</strong> fa parte del pacchetto UDP o TCP effettivo.
+                Viene utilizzato esclusivamente per il calcolo del checksum.
+                Include parti dell'intestazione IP per proteggersi da errori di routing che potrebbero causare la consegna di un pacchetto al protocollo o alla destinazione sbagliati.
+            </p>
+            <p><strong>Struttura dello pseudo-header:</strong></p>
+            <table>
+                <thead><tr><th>Campo</th><th>Descrizione</th></tr></thead>
+                <tbody>
+                <tr><td>Indirizzo IP sorgente (32 bit)</td><td>Indirizzo IP del mittente del datagramma IP.</td></tr>
+                <tr><td>Indirizzo IP destinazione (32 bit)</td><td>Indirizzo IP del destinatario del datagramma IP.</td></tr>
+                <tr><td>Zero (8 bit)</td><td>Campo riempitivo impostato a zero.</td></tr>
+                <tr><td>Protocollo (8 bit)</td><td>
+                    Specifica il protocollo del livello di trasporto.
+                    <ul style="list-style-type: disc;">
+                        <li>6 per TCP</li>
+                        <li>17 per UDP</li>
+                    </ul>
+                </td></tr>
+                <tr><td>Lunghezza TCP/UDP (16 bit)</td><td>Lunghezza dell'intestazione TCP o UDP e dei dati.</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Importanza dello pseudo-header:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Integrità end-to-end:</strong> Il checksum calcolato sullo pseudo-header, l'intestazione del livello di trasporto e i dati
+                    fornisce una protezione più solida contro gli errori rispetto al solo controllo dell'intestazione e dei dati del livello di trasporto.</li>
+                <li><strong>Prevenzione di errori di routing:</strong> Rileva se un pacchetto viene instradato in modo errato e consegnato a un protocollo del livello di trasporto errato
+                    o a un indirizzo IP errato all'interno dello stesso host.</li>
+            </ul>
+            <p>
+            </p>
+            <p>
+            
+            </p>
+        </section>
+
+        <section id="tcp">
+            <h2>7. TCP – Transmission Control Protocol</h2>
+            <p>
+                TCP è un protocollo di livello di trasporto orientato alla connessione e affidabile.
+                Fornisce un flusso di byte full-duplex tra due applicazioni.
+                TCP è progettato per garantire che i dati vengano consegnati in modo accurato e ordinato,
+                anche su reti inaffidabili.
+            </p>
+            <p><strong>Caratteristiche principali:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Orientato alla connessione:</strong>
+                    Prima che i dati possano essere scambiati, è necessario stabilire una connessione tra il mittente e il destinatario tramite un handshake a tre vie.
+                </li>
+                <li><strong>Affidabile:</strong>
+                    TCP garantisce che tutti i dati vengano consegnati al destinatario senza errori, perdita, duplicazione o riordinamento.
+                    Utilizza meccanismi come i numeri di sequenza, gli acknowledgment (ACK) e il ritrasmissione dei timeout.
+                </li>
+                <li><strong>Flusso di byte:</strong>
+                    TCP considera i dati come un flusso continuo di byte, non come singoli pacchetti.
+                </li>
+                <li><strong>Full-duplex:</strong>
+                    La comunicazione può avvenire in entrambe le direzioni contemporaneamente.
+                </li>
+                <li><strong>Controllo del flusso:</strong>
+                    TCP utilizza un meccanismo di finestra scorrevole per impedire al mittente di sopraffare il ricevitore con troppi dati.
+                </li>
+                <li><strong>Controllo della congestione:</strong>
+                    TCP include meccanismi per rilevare e rispondere alla congestione della rete, riducendo la velocità di trasmissione per evitare il collasso della rete.
+                </li>
+                <li><strong>Ordinato:</strong>
+                    TCP riassembla i dati ricevuti nell'ordine corretto, anche se i pacchetti arrivano fuori ordine.
+                </li>
+            </ul>
+            <p><strong>Instaurazione della connessione TCP (Three-Way Handshake):</strong></p>
+            <ol style="list-style-type: decimal;">
+                <li><strong>SYN (Synchronize):</strong> Il client invia un pacchetto SYN al server, richiedendo una connessione.</li>
+                <li><strong>SYN-ACK (Synchronize-Acknowledgment):</strong> Il server risponde con un pacchetto SYN-ACK, riconoscendo il SYN del client e
+                    richiedendo anche al client di sincronizzare la propria sequenza.</li>
+                <li><strong>ACK (Acknowledgment):</strong> Il client invia un pacchetto ACK al server, riconoscendo il SYN-ACK del server e stabilendo la connessione.</li>
+            </ol>
+            <a href="3way.html" target="_blank">
+                <iframe src="3way.html" width="1000" height="400" pointer-events: none;"></iframe>
+              </a>
+            <p><strong>Chiusura della connessione TCP (Four-Way Handshake):</strong></p>
+             <ol style="list-style-type: decimal;">
+                <li><strong>FIN (Finish):</strong> L'host A invia un pacchetto FIN per indicare che ha finito di inviare dati.</li>
+                <li><strong>ACK (Acknowledgment):</strong> L'host B risponde con un pacchetto ACK per riconoscere il FIN dell'host A.</li>
+                <li><strong>FIN (Finish):</strong> L'host B invia il proprio pacchetto FIN per indicare che ha finito di inviare dati.</li>
+                <li><strong>ACK (Acknowledgment):</strong> L'host A risponde con un pacchetto ACK per riconoscere il FIN dell'host B.</li>
+            </ol>
+            <a href="4way.html" target="_blank">
+                <iframe src="4way.html" width="1000" height="400" pointer-events: none;"></iframe>
+              </a>
+        </section>
+
+        <section id="socket-indirizzamento">
+            <h2>8. Socket e Indirizzamento</h2>
+            <p>
+                Un socket è un endpoint di comunicazione. È l'interfaccia tra il livello di applicazione e il livello di trasporto.
+                Un socket è essenzialmente un indirizzo che consente alle applicazioni di inviare e ricevere dati attraverso la rete.
+            </p>
+            <p><strong>Componenti di un socket:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Indirizzo IP:</strong> L'indirizzo IP del dispositivo (host).</li>
+                <li><strong>Numero di porta:</strong> Un numero di 16 bit che identifica un processo specifico (applicazione) in esecuzione sul dispositivo.</li>
+            </ul>
+            <p><strong>Tipi di socket:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Socket UDP:</strong> Identificato da una coppia (indirizzo IP, numero di porta).</li>
+                <li><strong>Socket TCP:</strong> Identificato da una quadrupla:
+                    <ul style="list-style-type: disc;">
+                        <li>Indirizzo IP sorgente</li>
+                        <li>Porta sorgente</li>
+                        <li>Indirizzo IP destinatario</li>
+                        <li>Porta destinataria</li>
+                    </ul>
+                </li>
+            </ul>
+            <p><strong>Esempio di indirizzamento socket:</strong></p>
+             <p>
+                Supponiamo di avere un client con IP 192.168.1.10 e porta 5000, e un server con IP 192.168.1.100 e porta 80 (per HTTP).
+                <br><br>
+                La comunicazione TCP tra il client e il server sarebbe identificata dai seguenti socket:
+            </p>
+            <table>
+                <thead><tr><th>Estremità</th><th>Indirizzo Socket</th></tr></thead>
+                <tbody>
+                <tr><td>Client</td><td>192.168.1.10:5000</td></tr>
+                <tr><td>Server</td><td>192.168.1.100:80</td></tr>
+                </tbody>
+            </table>
+            <p>
+               La connessione TCP sarebbe univocamente identificata dalla quadrupla:
+               <br>
+               {192.168.1.10, 5000, 192.168.1.100, 80}
+            </p>
+        </section>
+
+        <section id="connessione-attiva-passiva">
+            <h2>9. Connessione attiva e passiva</h2>
+            <p>
+                Nel processo di creazione di una connessione TCP, le due estremità hanno ruoli diversi:
+                <br><br>
+                <strong>Apertura attiva:</strong>
+            </p>
+            <ul style="list-style-type: disc;">
+                <li>Il client (o qualsiasi host che avvia la connessione) esegue un'apertura attiva.</li>
+                <li>Invia il primo pacchetto SYN per iniziare il three-way handshake.</li>
+                <li>La primitiva <code>CONNECT</code> viene utilizzata dall'applicazione per richiedere un'apertura attiva.</li>
+            </ul>
+            <p><strong>Apertura passiva:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>Il server (o l'host che attende una connessione in entrata) esegue un'apertura passiva.</li>
+                <li>Si mette in uno stato di "ascolto" per le connessioni in entrata utilizzando la primitiva <code>LISTEN</code>.</li>
+                <li>Quando arriva un pacchetto SYN da un client, il server risponde con un pacchetto SYN-ACK.</li>
+            </ul>
+            <p><strong>Relazione:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>Il three-way handshake si verifica tra un host che esegue un'apertura attiva e un host che esegue un'apertura passiva.</li>
+                <li>Il client esegue in genere l'apertura attiva e il server esegue l'apertura passiva.</li>
+            </ul>
+            <p><strong>Esempio:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>Quando si accede a un sito Web utilizzando un browser, il browser del tuo computer esegue un'apertura attiva
+                    inviando un pacchetto SYN al server Web.</li>
+                <li>Il server Web, che è in ascolto sulla porta 80, esegue un'apertura passiva e risponde con un pacchetto SYN-ACK.</li>
+            </ul>
+        </section>
+
+        <section id="header">
+            <h2>10. Header TCP e UDP</h2>
+            <p>
+                L'header è la parte iniziale di un pacchetto TCP o UDP che contiene informazioni di controllo.
+                Queste informazioni sono utilizzate dai protocolli di livello di trasporto per svolgere le loro funzioni.
+            </p>
+
+            <p><strong>Header UDP:</strong></p>
+            <table>
+                <thead><tr><th>Campo</th><th>Dimensione</th><th>Descrizione</th></tr></thead>
+                <tbody>
+                <tr><td>Source Port</td><td>16 bit</td><td>Porta del mittente</td></tr>
+                <tr><td>Destination Port</td><td>16 bit</td><td>Porta del destinatario</td></tr>
+                <tr><td>Length</td><td>16 bit</td><td>Lunghezza totale del datagramma UDP (header + dati)</td></tr>
+                <tr><td>Checksum</td><td>16 bit</td><td>Checksum per rilevare errori</td></tr>
+                <tr><td>Dati</td><td>Variabile</td><td>Payload dei dati dell'applicazione</td>
+                </tbody>
+            </table>
+            <p><strong>Header TCP:</strong></p>
+            <table>
+                <thead><tr><th>Campo</th><th>Dimensione</th><th>Funzione</th></tr></thead>
+                <tbody>
+                <tr><td>Source Port</td><td>16 bit</td><td>Porta del mittente</td></tr>
+                <tr><td>Destination Port</td><td>16 bit</td><td>Porta del destinatario</td></tr>
+                <tr><td>Sequence Number</td><td>32 bit</td><td>Numero di sequenza del primo byte di dati nel segmento</td></tr>
+                <tr><td>Acknowledgment Number</td><td>32 bit</td><td>Prossimo numero di sequenza che il mittente si aspetta di ricevere</td></tr>
+                <tr><td>Data Offset</td><td>4 bit</td><td>Dimensione dell'header TCP in multipli di 4 byte</td></tr>
+                <tr><td>Reserved</td><td>3 bit</td><td>Riservato per uso futuro</td></tr>
+                <tr><td>Flags</td><td>9 bit</td><td>
+                    <ul style="list-style-type: disc;">
+                        <li><strong>SYN:</strong> Sincronizza i numeri di sequenza per iniziare una connessione</li>
+                        <li><strong>ACK:</strong> Acknowledgment; conferma la ricezione dei dati</li>
+                        <li><strong>FIN:</strong> Indica la fine della trasmissione</li>
+                        <li><strong>RST:</strong> Reset della connessione</li>
+                        <li><strong>PSH:</strong> Push; richiede che i dati vengano consegnati immediatamente all'applicazione</li>
+                        <li><strong>URG:</strong> Urgent; indica che i dati urgenti sono presenti</li>
+                    </ul>
+                </td></tr>
+                <tr><td>Window</td><td>16 bit</td><td>Dimensione della finestra di ricezione, utilizzata per il controllo del flusso</td></tr>
+                <tr><td>Checksum</td><td>16 bit</td><td>Checksum per rilevare errori</td></tr>
+                <tr><td>Urgent Pointer</td><td>16 bit</td><td>Offset dai numero di sequenza che indica la fine dei dati urgenti</td></tr>
+                <tr><td>Options</td><td>Variabile</td><td>Opzioni opzionali (es. dimensione massima del segmento)</td></tr>
+                <tr><td>Padding</td><td>Variabile</td><td>Riempimento per garantire che l'header TCP sia un multiplo di 4 byte</td></tr>
+                <tr><td>Dati</td><td>Variabile</td><td>Payload dei dati dell'applicazione</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="header-visuale">
+            <h2>11. Struttura Visuale Header TCP (Offset a 32 bit)</h2>
+            <p>
+            <a href="tcp.html" target="_blank">
+                    <iframe src="tcp.html" width="1200" height="600" pointer-events: none;"></iframe>
+                </a>
+
+            <p><strong>Note:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Data Offset:</strong> Indica dove iniziano i dati, misurato in multipli di 4 byte.  Ciò è necessario perché la dimensione del campo Opzioni è variabile.</li>
+                <li><strong>Reserved:</strong> Questo campo è riservato per uso futuro e deve essere impostato a zero.</li>
+                <li><strong>Flags:</strong>
+                     <ul style="list-style-type: disc;">
+                        <li><strong>URG</strong>: Puntatore urgente valido</li>
+                        <li><strong>ACK</strong>: Numero di acknowledgment valido</li>
+                        <li><strong>PSH</strong>: Dati push function</li>
+                        <li><strong>RST</strong>: Reset della connessione</li>
+                        <li><strong>SYN</strong>: Sincronizza i numeri di sequenza</li>
+                        <li><strong>FIN</strong>: Nessun altro dato dal mittente</li>
+                    </ul>
+                </li>
+                <li><strong>Window Size:</strong> Utilizzato per il controllo del flusso, indica quanti dati il ricevitore è disposto ad accettare.</li>
+                <li><strong>Options:</strong> Campo opzionale che consente varie funzionalità aggiuntive, come la negoziazione della dimensione massima del segmento (MSS).</li>
+            </ul>
+        </section>
+
+        <section id="rtt-rto">
+            <h2>12. Calcolo di RTT e RTO</h2>
+            <p>
+                TCP utilizza il Round Trip Time (RTT) e il Retransmission Timeout (RTO) per garantire un trasferimento dati affidabile.
+                <br><br>
+                <strong>RTT (Round Trip Time):</strong>
+            </p>
+            <ul style="list-style-type: disc;">
+                <li>Il tempo impiegato per un pacchetto per viaggiare dal mittente al destinatario e per l'acknowledgment (ACK) per tornare al mittente.</li>
+                <li>Viene utilizzato per stimare la latenza della rete.</li>
+                <li>TCP misura l'RTT per ogni segmento inviato e ricevuto.</li>
+            </ul>
+            <p><strong>RTO (Retransmission Timeout):</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>Il tempo dopo il quale il mittente ritrasmette un segmento se non ha ricevuto un ACK.</li>
+                <li>L'RTO deve essere impostato in modo appropriato:
+                    <ul style="list-style-type: disc;">
+                        <li>Troppo piccolo: ritrasmissioni non necessarie, che aumentano il carico della rete.</li>
+                        <li>Troppo grande: ritardo nel recupero dalla perdita di pacchetti, che riduce la velocità effettiva.</li>
+                    </ul>
+                </li>
+            </ul>
+            <p><strong>Algoritmo di Jacobson per il calcolo dell'RTO:</strong></p>
+            <pre>RTO = SRTT + 4 * RTTVAR</pre>
+            <ul style="list-style-type: disc;">
+                <li><strong>SRTT (Smoothed Round Trip Time):</strong> Una media mobile dell'RTT calcolato.  Viene calcolato per attenuare le fluttuazioni dell'RTT.</li>
+                <li><strong>RTTVAR (RTT Variance):</strong> Stima della variabilità dell'RTT.</li>
+            </ul>
+            <p><strong>Calcolo di SRTT e RTTVAR:</strong></p>
+            <p>
+                [Equazioni per il calcolo di SRTT e RTTVAR]
+            </p>
+            <p><strong>Importanza:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>L'algoritmo di Jacobson adatta dinamicamente l'RTO alle mutevoli condizioni della rete, migliorando le prestazioni di TCP.</li>
+                <li>Un RTO accurato è fondamentale per un recupero efficiente dalla perdita di pacchetti e per evitare ritrasmissioni non necessarie.</li>
+            </ul>
+        </section>
+
+        <section id="timers">
+            <h2>13. Timer TCP: Tipologie e Funzionamento</h2>
+            <p>
+                TCP utilizza diversi timer per gestire varie operazioni e garantire un trasferimento dati affidabile.
+            </p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Timer di ritrasmissione (RTO):</strong>
+                    <ul style="list-style-type: disc;">
+                        <li>Avviato ogni volta che viene inviato un segmento TCP.</li>
+                        <li>Se l'ACK per il segmento non viene ricevuto prima della scadenza del timer, il segmento viene ritrasmesso.</li>
+                        <li>L'RTO è calcolato dinamicamente utilizzando l'algoritmo di Jacobson.</li>
+                        <li>Fondamentale per il recupero dalla perdita di pacchetti.</li>
+                    </ul>
+                </li>
+                <li><strong>Timer di persistenza:</strong>
+                    <ul style="list-style-type: disc;">
+                        <li>Utilizzato per gestire la situazione in cui il ricevitore annuncia una dimensione della finestra di ricezione pari a zero,
+                            indicando che non è in grado di accettare altri dati.</li>
+                        <li>Il mittente avvia un timer di persistenza e invia periodicamente pacchetti di "sonda finestra" al ricevitore per verificare se la finestra è diventata diversa da zero.</li>
+                        <li>Previene una situazione di stallo in cui il mittente attende indefinitamente che il ricevitore apra la sua finestra.</li>
+                    </ul>
+                </li>
+                <li><strong>Timer Keepalive:</strong>
+                    <ul style="list-style-type: disc;">
+                        <li>Utilizzato per rilevare connessioni inattive o interrotte.</li>
+                        <li>Se una connessione rimane inattiva per un certo periodo di tempo, il mittente può inviare pacchetti keepalive al ricevitore.</li>
+                        <li>Se il ricevitore non risponde, il mittente può concludere che la connessione è interrotta e chiuderla.</li>
+                        <li>Opzionale e non abilitato per impostazione predefinita.</li>
+                    </ul>
+                </li>
+                <li><strong>Timer TIME-WAIT:</strong>
+                    <ul style="list-style-type: disc;">
+                        <li>Utilizzato durante il processo di chiusura della connessione TCP.</li>
+                        <li>Dopo che un endpoint ha inviato il suo ACK finale, entra nello stato TIME-WAIT e avvia il timer TIME-WAIT.</li>
+                        <li>La durata del timer è in genere impostata su 2 volte il Maximum Segment Lifetime (MSL).</li>
+                        <li>Ciò consente ai pacchetti ritardati o duplicati dalla connessione precedente di scadere,
+                            evitando che interferiscano con le connessioni successive.</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section id="mtu-mss">
+            <h2>14. MTU e MSS</h2>
+            <p>
+                MTU e MSS sono parametri importanti che influenzano le dimensioni dei pacchetti e l'efficienza della trasmissione dati in una rete.
+                <br><br>
+                <strong>MTU (Maximum Transmission Unit):</strong>
+            </p>
+            <ul style="list-style-type: disc;">
+                <li>La dimensione massima del pacchetto IP (in byte) che può essere trasmessa su un particolare mezzo di rete (es. Ethernet) senza frammentazione.</li>
+                <li>La frammentazione si verifica quando un pacchetto è più grande dell'MTU del percorso.  La frammentazione è inefficiente e può portare a prestazioni ridotte.</li>
+                <li>L'MTU è una proprietà del livello di collegamento dati.</li>
+                <li>Per Ethernet, l'MTU tipico è 1500 byte.</li>
+            </ul>
+            <p><strong>MSS (Maximum Segment Size):</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>La quantità massima di dati (in byte) che TCP è disposto ad accettare in un singolo segmento.</li>
+                <li>MSS è una proprietà del livello di trasporto (TCP).</li>
+                <li>Viene negoziato tra il mittente e il ricevitore durante il three-way handshake.</li>
+                <li>L'obiettivo è evitare la frammentazione IP a livello inferiore.</li>
+            </ul>
+            <p><strong>Relazione tra MTU e MSS:</strong></p>
+            <p>
+                MSS è in genere derivato dall'MTU sottraendo le dimensioni delle intestazioni IP e TCP:
+                <br>
+                <code>MSS = MTU - (Dimensione intestazione IP) - (Dimensione intestazione TCP)</code>
+            </p>
+            <p><strong>Esempio:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>Se l'MTU di una rete Ethernet è 1500 byte, la dimensione tipica dell'intestazione IP è 20 byte e la dimensione tipica dell'intestazione TCP è 20 byte,
+                    allora l'MSS sarebbe:
+                    <br>
+                    <code>MSS = 1500 - 20 - 20 = 1460 byte</code>
+                </li>
+            </ul>
+            <p><strong>Path MTU Discovery (PMTUD):</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>Un meccanismo utilizzato per determinare l'MTU minimo lungo il percorso di rete tra il mittente e il destinatario.</li>
+                <li>Il mittente invia pacchetti con il bit "Don't Fragment" (DF) impostato nell'intestazione IP.</li>
+                <li>Se un router lungo il percorso ha un MTU inferiore, restituisce un messaggio ICMP "Destination Unreachable - Fragmentation Needed and Don't Fragment was Set".</li>
+                <li>Il mittente riduce quindi la dimensione del segmento e ritrasmette il pacchetto.</li>
+                <li>Questo processo continua fino a quando il mittente determina l'MTU del percorso.</li>
+                <li>PMTUD è importante per evitare la frammentazione e garantire prestazioni efficienti.</li>
+            </ul>
+        </section>
+
+        <section id="nack">
+            <h2>15. NACK implicito in TCP</h2>
+            <p>
+                TCP non utilizza esplicitamente messaggi NACK (Negative Acknowledgment) come alcuni altri protocolli.
+                Invece, TCP si basa su ACK (Acknowledgment) e timeout per rilevare e recuperare dalla perdita di pacchetti.
+                Tuttavia, TCP ha un meccanismo di NACK "implicito".
+            </p>
+            <p><strong>Come funziona il NACK implicito in TCP:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Timeout:</strong>
+                    <ul style="list-style-type: disc;">
+                        <li>Il mittente imposta un timer di ritrasmissione (RTO) quando invia un segmento.</li>
+                        <li>Se non riceve un ACK per quel segmento prima della scadenza del timer, il mittente presuppone che il segmento sia andato perso
+                            e lo ritrasmette.</li>
+                        <li>La mancata ricezione di un ACK entro l'RTO è una forma di NACK implicito: il mittente deduce che il pacchetto non è stato ricevuto.</li>
+                    </ul>
+                </li>
+                <li><strong>ACK duplicati:</strong>
+                    <ul style="list-style-type: disc;">
+                        <li>Quando il ricevitore riceve un segmento fuori ordine, invia un ACK per l'ultimo byte in ordine che ha ricevuto.</li>
+                        <li>Se il mittente riceve tre ACK duplicati (cioè, tre ACK per lo stesso numero di sequenza),
+                            presuppone che il segmento successivo sia andato perso e lo ritrasmette (Fast Retransmit).</li>
+                        <li>I tre ACK duplicati agiscono come un NACK implicito, informando il mittente che un pacchetto è probabilmente andato perso.</li>
+                    </ul>
+                </li>
+            </ul>
+            <p><strong>Vantaggi del NACK implicito:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Efficienza:</strong> Evita la necessità di messaggi NACK espliciti, riducendo l'overhead della rete in condizioni normali.</li>
+                <li><strong>Robustezza:</strong> Gestisce la perdita di pacchetti e gli ACK persi in modo efficiente.</li>
+            </ul>
+            <p><strong>Svantaggi del NACK implicito:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Ambiguità:</strong> A volte può essere difficile distinguere tra perdita di pacchetti e semplice riordinamento.
+                    Ciò può portare a ritrasmissioni non necessarie.</li>
+                <li><strong>Rilevamento lento:</strong> Il rilevamento della perdita basato su timeout può essere lento, soprattutto se l'RTO è grande.</li>
+            </ul>
+        </section>
+
+        <section id="chiusura">
+            <h2>16. Chiusura della Connessione TCP</h2>
+            <p>
+                La chiusura di una connessione TCP è un processo controllato che garantisce che entrambi i lati della connessione rilascino le risorse
+                e che tutti i dati in sospeso vengano trasmessi.  A differenza dell'handshake a tre vie per l'apertura della connessione,
+                la chiusura di TCP utilizza un handshake a quattro vie.
+            </p>
+            <p><strong>Processo di chiusura della connessione TCP (Four-Way Handshake):</strong></p>
+            <ol style="list-style-type: decimal;">
+                <li><strong>FIN (da Host A):</strong>
+                    <ul style="list-style-type: disc;">
+                        <li>L'Host A (che potrebbe essere il client o il server) invia un segmento con il flag FIN (Finish) impostato per indicare che ha finito
+                            di inviare dati.</li>
+                        <li>L'Host A entra nello stato FIN-WAIT-1.</li>
+                    </ul>
+                </li>
+                <li><strong>ACK (da Host B):</strong>
+                    <ul style="list-style-type: disc;">
+                        <li>L'Host B riceve il FIN e risponde con un segmento ACK (Acknowledgment) per riconoscere la ricezione del FIN.</li>
+                        <li>L'Host B entra nello stato CLOSE-WAIT.</li>
+                        <li>A questo punto, l'Host A ha finito di inviare dati, ma può ancora ricevere dati dall'Host B.  Questa è chiamata chiusura half-close.</li>
+                        <li>L'Host A entra nello stato FIN-WAIT-2.</li>
+                    </ul>
+                </li>
+                <li><strong>FIN (da Host B):</strong>
+                    <ul style="list-style-type: disc;">
+                        <li>Quando l'Host B ha finito di inviare i suoi dati, invia anche un segmento FIN all'Host A per indicare che ha finito.</li>
+                    </ul>
+                </li>
+                <li><strong>ACK (da Host A):</strong>
+                    <ul style="list-style-type: disc;">
+                        <li>L'Host A riceve il FIN dall'Host B e invia un ACK per riconoscerlo.</li>
+                        <li>L'Host A entra nello stato TIME-WAIT.</li>
+                        <li>L'Host B entra nello stato CLOSED.</li>
+                    </ul>
+                </li>
+            </ol>
+            <p><strong>Stato Half-Closed:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>Dopo il passaggio 2, la connessione è in uno stato half-closed.  L'Host A ha finito di inviare dati, ma può ancora ricevere dati dall'Host B.</li>
+                <li>Ciò consente all'Host B di continuare a inviare eventuali dati rimanenti all'Host A prima di chiudere completamente la connessione.</li>
+            </ul>
+            <p><strong>Stato TIME-WAIT:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>L'Host A rimane nello stato TIME-WAIT per un periodo di tempo (2 * MSL - Maximum Segment Lifetime) dopo aver inviato l'ACK finale.</li>
+                <li>Ciò consente a eventuali segmenti ritardati o duplicati di raggiungere la loro destinazione, impedendo loro di essere interpretati come parte di una nuova connessione.</li>
+                <li>Fornisce anche all'Host B un'ultima possibilità di ricevere l'ACK finale in caso di perdita.</li>
+            </ul>
+        </section>
+
+        <section id="inetd">
+            <h2>17. inetd: il super-server</h2>
+            <p>
+                <code>inetd</code> (Internet daemon) è un "super-server" su sistemi operativi Unix-like che gestisce le richieste di connessione in entrata per vari servizi Internet.
+                È stato ampiamente utilizzato in passato, ma è stato in gran parte sostituito da sistemi più moderni come <code>systemd</code>.
+            </p>
+            <p><strong>Funzionamento di inetd:</strong></p>
+            <ol style="list-style-type: decimal;">
+                <li><strong>Ascolto su più porte:</strong> <code>inetd</code> è configurato per ascoltare su più porte contemporaneamente, ciascuna corrispondente a un servizio Internet specifico (es. FTP sulla porta 21, Telnet sulla porta 23, HTTP sulla porta 80).</li>
+                <li><strong>Ricezione di una richiesta di connessione:</strong> Quando un client tenta di connettersi a un servizio, il sistema operativo inoltra la richiesta a <code>inetd</code>.</li>
+                <li><strong>Avvio del demone del servizio appropriato:</strong> <code>inetd</code> determina quale servizio è stato richiesto in base al numero di porta.
+                    Crea un nuovo processo per gestire la connessione per quel servizio (es. <code>ftpd</code> per FTP, <code>telnetd</code> per Telnet, <code>httpd</code> per HTTP).</li>
+                <li><strong>Passaggio del socket:</strong> <code>inetd</code> passa il socket di connessione al processo del servizio appena creato.
+                    Ciò consente al demone del servizio di comunicare direttamente con il client.</li>
+                <li><strong>Ritiro di inetd:</strong> <code>inetd</code> si ritira e attende la successiva richiesta di connessione.
+                    Il demone del servizio continua a gestire la connessione con il client.</li>
+            </ol>
+            <p><strong>Vantaggi di inetd:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Efficienza delle risorse:</strong> <code>inetd</code> avvia i demoni del servizio solo quando necessario, riducendo il consumo di risorse del sistema.
+                    Senza <code>inetd</code>, ogni demone del servizio dovrebbe essere in esecuzione continuamente, consumando memoria e cicli della CPU.</li>
+                <li><strong>Sicurezza:</strong> <code>inetd</code> può fornire controlli di sicurezza centralizzati, come la registrazione e il controllo degli accessi.</li>
+                <li><strong>Facilità di gestione:</strong> Semplifica la gestione di più servizi Internet, poiché sono tutti gestiti da un unico processo.</li>
+            </ul>
+            <p><strong>Svantaggi di inetd:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Overhead:</strong> C'è un piccolo overhead associato all'avvio di un nuovo processo per ogni connessione.  Ciò può influire sulle prestazioni per i servizi ad alto traffico.</li>
+                <li><strong>Funzionalità limitata:</strong> <code>inetd</code> è adatto solo per servizi semplici e a breve durata.  Non è adatto per servizi a lunga durata o complessi.</li>
+                <li><strong>Preoccupazioni sulla sicurezza:</strong> Se <code>inetd</code> è compromesso, tutti i servizi che gestisce possono essere compromessi.</li>
+            </ul>
+        </section>
+
+        <section id="multiplexing-socket">
+             <h2>18. Multiplexing e Socket</h2>
+            <p>
+                Multiplexing e demultiplexing sono processi essenziali che consentono a più applicazioni su un host di condividere la stessa connessione di rete sottostante.
+                I socket svolgono un ruolo fondamentale in questi processi.
+            </p>
+            <p><strong>Multiplexing:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>Sul lato mittente, il multiplexing è il processo di raccolta dei dati da più socket (cioè, da più applicazioni)
+                    e l'inoltro di tali dati a un singolo canale (il livello di trasporto).</li>
+                <li>Il livello di trasporto aggiunge intestazioni (TCP o UDP) ai dati di ciascuna applicazione, che includono informazioni sulla porta sorgente e porta di destinazione.</li>
+                <li>Queste informazioni sulla porta consentono al livello di trasporto ricevente di identificare a quale applicazione appartengono i dati.</li>
+            </ul>
+            <p><strong>Demultiplexing:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>Sul lato ricevente, il demultiplexing è il processo di utilizzo delle informazioni nell'intestazione del livello di trasporto
+                    per consegnare i dati ricevuti al socket (e quindi all'applicazione) corretto.</li>
+                <li>Il livello di trasporto ricevente esamina la porta di destinazione nell'intestazione e indirizza i dati all'applicazione associata a tale porta.</li>
+            </ul>
+
+            <p><strong>Ruolo dei socket:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>I socket fungono da identificatori univoci per le applicazioni che comunicano sulla rete.</li>
+                <li>Ogni socket è associato a un numero di porta specifico.</li>
+                <li>Quando un'applicazione invia dati, li invia attraverso il suo socket.  Il numero di porta del socket viene utilizzato come porta sorgente nell'intestazione del livello di trasporto.</li>
+                 <li>Quando il livello di trasporto ricevente riceve dati, utilizza la porta di destinazione nell'intestazione per determinare a quale socket consegnare i dati.</li>
+            </ul>
+            <p><strong>Esempio:</strong></p>
+            <p>
+                Considera un server che esegue due applicazioni: un server Web (porta 80) e un server FTP (porta 21).
+                Quando un client invia una richiesta HTTP al server, utilizza la porta di destinazione 80.
+                Quando il server riceve la richiesta, il livello di trasporto utilizza la porta di destinazione 80 per consegnare i dati al server Web.
+                Allo stesso modo, quando un client invia una richiesta FTP al server, utilizza la porta di destinazione 21.
+                Il livello di trasporto del server utilizza la porta di destinazione 21 per consegnare i dati al server FTP.
+            </p>
+        </section>
+
+        <section id="qos">
+            <h2>19. Qualità del Servizio</h2>
+            <p>
+                La Qualità del Servizio (QoS) si riferisce alla capacità di una rete di fornire un servizio migliore a tipi specifici di traffico di rete rispetto a un servizio generale.
+                QoS mira a dare priorità a determinati tipi di traffico (es. voce e video) rispetto ad altri (es. email e trasferimento file) per garantire prestazioni accettabili.
+            </p>
+            <p><strong>Parametri QoS:</strong></p>
+            <table>
+                <thead><tr><th>Parametro</th><th>Descrizione</th></tr></thead>
+                <tbody>
+                <tr><td>Throughput (Larghezza di banda)</td><td>La quantità di dati che può essere trasmessa attraverso la rete in un dato periodo di tempo (es. Mbps).</td></tr>
+                <tr><td>Jitter</td><td>La variazione nel ritardo tra i pacchetti.  Un jitter elevato può causare interruzioni e distorsioni nelle applicazioni audio e video.</td></tr>
+                <tr><td>Ritardo (Latenza)</td><td>Il tempo impiegato per un pacchetto per viaggiare dalla sorgente alla destinazione.</td></tr>
+                <tr><td>Perdita di pacchetti</td><td>La percentuale di pacchetti che non raggiungono la loro destinazione.</td></tr>
+                <tr><td>Priorità</td><td>La precedenza relativa assegnata a diversi tipi di traffico.</td></tr>
+                <tr><td>Sicurezza</td><td>Meccanismi per proteggere il traffico di rete da accesso non autorizzato e intercettazione.</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Meccanismi QoS:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Buffering:</strong> Memorizzazione temporanea dei pacchetti per attenuare il jitter e gestire la congestione.</li>
+                <li><strong>Scheduling:</strong> Determinazione dell'ordine in cui i pacchetti vengono trasmessi per dare priorità al traffico importante.
+                    Esempi includono First-Come First-Served (FCFS), Priority Queuing e Weighted Fair Queuing (WFQ).</li>
+                <li><strong>Traffic Shaping:</strong> Controllo del flusso del traffico per garantire che si conformi a determinati profili.
+                    Ciò può aiutare a prevenire la congestione.  Un esempio è il leaky bucket.</li>
+                <li><strong>Congestion Avoidance:</strong> Meccanismi per rilevare e rispondere alla congestione della rete prima che si verifichi il collasso.
+                    Esempi includono TCP Congestion Control e Random Early Detection (RED).</li>
+                <li><strong>Integrated Services (IntServ):</strong> Un'architettura QoS che richiede alle applicazioni di prenotare risorse di rete end-to-end.</li>
+                <li><strong>Differentiated Services (DiffServ):</strong> Un'architettura QoS che classifica il traffico in base al tipo e applica diversi trattamenti a ciascuna classe.</li>
+                <li><strong>RSVP (Resource Reservation Protocol):</strong> Un protocollo di segnalazione utilizzato da IntServ per prenotare risorse.</li>
+            </ul>
+        </section>
+
+        <section id="errori">
+            <h2>20. Malfunzionamenti ed Esempi</h2>
+            <p>
+                Il livello di trasporto è responsabile della fornitura di un trasferimento dati affidabile, ma possono verificarsi vari malfunzionamenti.
+            </p>
+            <ul style="list-style-type: disc;">
+                <li><strong>Perdita di pacchetti:</strong> I pacchetti possono andare persi a causa della congestione della rete, di hardware difettoso o di altri problemi.
+                    TCP rileva la perdita di pacchetti tramite timeout e ACK duplicati e ritrasmette i pacchetti persi.</li>
+                <li><strong>Riordinamento dei pacchetti:</strong> I pacchetti possono arrivare fuori ordine a causa di percorsi di rete diversi.
+                    TCP utilizza i numeri di sequenza per riordinare i pacchetti ricevuti.</li>
+                <li><strong>Corruzione dei dati:</strong> I pacchetti possono essere danneggiati durante la trasmissione a causa del rumore o di altri fattori.
+                    TCP e UDP utilizzano i checksum per rilevare la corruzione dei dati.  TCP ritrasmette i pacchetti danneggiati, mentre UDP di solito li scarta.</li>
+                <li><strong>Congestione:</strong> La congestione della rete si verifica quando la domanda di larghezza di banda supera l'offerta.
+                    TCP include meccanismi di controllo della congestione per ridurre la velocità di trasmissione durante la congestione.</li>
+                <li><strong>Controllo del flusso:</strong> Un mittente veloce può sopraffare un ricevitore lento, causando la perdita di pacchetti.
+                    TCP utilizza un meccanismo di finestra scorrevole per controllare la quantità di dati che un mittente può inviare.</li>
+            </ul>
+            <p><strong>Esempio di scenario di errore:</strong></p>
+            <p>
+                Supponiamo che un client TCP stia inviando dati a un server.
+                Il client invia un segmento con numero di sequenza 1 e 567 byte di dati.
+                Il server riceve il segmento e invia un ACK con numero di acknowledgment 568.
+                Successivamente, il client invia un altro segmento con numero di sequenza 900 e 1100 byte di dati (byte 900-2000).
+                Tuttavia, questo segmento viene perso a causa della congestione della rete.
+                Il server, che si aspetta di ricevere i byte 568-2000, continua a inviare ACK con numero di acknowledgment 568.
+                Quando il client riceve tre ACK duplicati per 568, rileva la perdita del segmento e lo ritrasmette.
+            </p>
+        </section>
+
+        <section id="confronto">
+            <h2>21. TCP vs UDP</h2>
+            <p>
+                TCP e UDP sono i due principali protocolli di livello di trasporto, ciascuno con i propri punti di forza e di debolezza.
+            </p>
+            <table>
+                <thead><tr><th>Caratteristica</th><th>TCP</th><th>UDP</th></tr></thead>
+                <tbody>
+                <tr><td>Tipo di connessione</td><td>Orientato alla connessione</td><td>Senza connessione</td></tr>
+                <tr><td>Affidabilità</td><td>Affidabile (consegna garantita, ordinata e senza duplicati)</td><td>Non affidabile (best-effort)</td></tr>
+                <tr><td>Controllo del flusso</td><td>Sì</td><td>No</td></tr>
+                <tr><td>Controllo della congestione</td><td>Sì</td><td>No</td></tr>
+                <tr><td>Overhead</td><td>Più alto (intestazione più grande, gestione della connessione)</td><td>Più basso (intestazione più piccola)</td></tr>
+                <tr><td>Velocità</td><td>Generalmente più lento (a causa dei controlli di affidabilità)</td><td>Generalmente più veloce</td></tr>
+                <tr><td>Casi d'uso comuni</td><td>Web (HTTP, HTTPS), email (SMTP), trasferimento file (FTP)</td><td>Streaming multimediale, VoIP, DNS, giochi online</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Quando usare TCP:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>Quando l'affidabilità è fondamentale, come nel trasferimento di file, nelle transazioni di database e nella navigazione web.</li>
+                <li>Quando l'ordine dei dati è importante.</li>
+                <li>Quando l'applicazione può tollerare una certa latenza.</li>
+            </ul>
+            <p><strong>Quando usare UDP:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>Quando la bassa latenza è fondamentale, come nello streaming multimediale, nei giochi online e nelle chiamate VoIP.</li>
+                <li>Quando una certa perdita di dati è accettabile.</li>
+                <li>Quando l'applicazione deve trasmettere piccole quantità di dati in modo rapido ed efficiente.</li>
+                <li>Per applicazioni multicast o broadcast.</li>
+            </ul>
+        </section>
+
+        <section id="ports">
+            <h2>22. Well-Known Ports</h2>
+            <p>
+                Le porte Well-Known sono un intervallo di numeri di porta (da 0 a 1023) assegnati a servizi Internet comuni.
+                Sono standardizzati dall'Internet Assigned Numbers Authority (IANA).
+            </p>
+            <table>
+                <thead><tr><th>Porta</th><th>Protocollo</th><th>Servizio</th></tr></thead>
+                <tbody>
+                <tr><td>20</td><td>TCP</td><td>FTP (Data)</td></tr>
+                <tr><td>21</td><td>TCP</td><td>FTP (Control)</td></tr>
+                <tr><td>22</td><td>TCP</td><td>SSH (Secure Shell)</td></tr>
+                <tr><td>23</td><td>TCP</td><td>Telnet</td></tr>
+                <tr><td>25</td><td>TCP</td><td>SMTP (Simple Mail Transfer Protocol)</td></tr>
+                <tr><td>53</td><td>TCP/UDP</td><td>DNS (Domain Name System)</td></tr>
+                <tr><td>80</td><td>TCP</td><td>HTTP (Hypertext Transfer Protocol)</td></tr>
+                <tr><td>110</td><td>TCP</td><td>POP3 (Post Office Protocol version 3)</td></tr>
+                <tr><td>143</td><td>TCP</td><td>IMAP (Internet Message Access Protocol)</td></tr>
+                <tr><td>443</td><td>TCP</td><td>HTTPS (HTTP Secure)</td></tr>
+                <tr><td>3389</td><td>TCP</td><td>RDP (Remote Desktop Protocol)</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Note:</strong></p>
+            <ul style="list-style-type: disc;">
+                <li>Le porte Well-Known vengono utilizzate dai server per ascoltare le connessioni in entrata dai client.</li>
+                <li>I client utilizzano in genere porte effimere (porte temporanee assegnate dal sistema operativo) come porte sorgente.</li>
+                <li>L'utilizzo di porte Well-Known richiede privilegi di amministratore su molti sistemi operativi.</li>
+                <li>Oltre alle porte Well-Known, ci sono anche porte registrate (1024-49151) e porte dinamiche/private (49152-65535).</li>
+            </ul>
+        </section>
+    </main>
+    <script>
+        const links = document.querySelectorAll('aside a');
+        links.forEach(link => {
+            link.addEventListener('click', function() {
+                links.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        window.addEventListener('scroll', () => {
+            const scrollPosition = window.scrollY + 100;
+            links.forEach(link => {
+                const targetId = link.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                if (targetElement && targetElement.offsetTop <= scrollPosition && (targetElement.offsetTop + targetElement.offsetHeight) > scrollPosition) {
+                    links.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+    </script>
+</body>
+</html>
+
